@@ -349,6 +349,30 @@ app.get('/api/cars/fetching', async (req, res) => {
     res.status(500).json({ error: 'Internal server error', details: error.message });
   }
 });
+
+app.get('/api/cars/ratings', async (req, res) => {
+  try {
+    const sql = `
+      SELECT car_id, AVG(rating) AS average_rating
+      FROM feedback
+      GROUP BY car_id;
+    `;
+    const result = await pool.query(sql);
+
+    const ratings = {};
+    result.rows.forEach(row => {
+      ratings[row.car_id] = row.average_rating;
+    });
+
+    console.log('Retrieved car ratings:', ratings);
+
+    res.json(ratings);
+  } catch (error) {
+    console.error('Error retrieving car ratings:', error);
+    res.status(500).json({ message: 'Error retrieving car ratings' });
+  }
+});
+
 // Assuming you're using Express and have your database connection set up
 app.get('/api/cars/:id', async (req, res) => {
   const vehicleId = req.params.id;
@@ -389,27 +413,6 @@ app.get('/api/carslider/data-retrieve', async (req, res) => {
   } catch (error) {
     console.error('Error retrieving cars:', error);
     res.status(500).json({ message: 'Error retrieving cars' });
-  }
-});
-
-app.get('/api/cars/ratings', async (req, res) => {
-  try {
-    const sql = `
-      SELECT car_id, AVG(rating) AS average_rating
-      FROM feedback
-      GROUP BY car_id;
-    `;
-    const result = await pool.query(sql);
-
-    const ratings = {};
-    result.rows.forEach(row => {
-      ratings[row.car_id] = row.average_rating;
-    });
-
-    res.json(ratings);
-  } catch (error) {
-    console.error('Error retrieving car ratings:', error);
-    res.status(500).json({ message: 'Error retrieving car ratings' });
   }
 });
 

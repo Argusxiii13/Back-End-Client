@@ -19,8 +19,8 @@
 # misc
 .DS_Store
 *.pem
-.env                    # Add this line
-.env.local              # Also add these for good measure
+.env
+.env.local
 .env.*.local
 
 # debug

@@ -22,9 +22,13 @@ const bcrypt = require('bcrypt');
 const otps = {};
 app.use(express.static(path.join(__dirname, 'admin')));
 
-// Database connection - 
-//const pool = new Pool({host: "localhost", user: 'postgres', password: 'root', database: 'autoconnect', port: 5432});
-const pool = new Pool({ connectionString: process.env.POSTGRES_URL,})
+// Database connection (NEON_URL only)
+const neonUrl = process.env.NEON_URL;
+if (!neonUrl) {
+  console.error('NEON_URL is required to start the server.');
+  process.exit(1);
+}
+const pool = new Pool({ connectionString: neonUrl });
 
 
 app.use(express.json({ limit: '50mb' }));

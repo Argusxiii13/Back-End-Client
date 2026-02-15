@@ -68,19 +68,15 @@ async function verifyCaptcha(solution) {
         });
 
         const data = await response.json();
-        console.log('Captcha verification response:', data);
         return data;
     } catch (error) {
-        console.error('Error verifying captcha:', error);
         return { success: false, errors: ['Failed to verify captcha'] };
     }
 }
 
 const sendEmailHandler = async (req, res) => {
-    console.log('Received request:', req.body);
-    
+
     if (req.method !== 'POST') {
-        console.log(`Method not allowed: ${req.method}`);
         res.setHeader('Allow', ['POST']);
         return res.status(405).end(`Method ${req.method} Not Allowed`);
     }
@@ -88,17 +84,14 @@ const sendEmailHandler = async (req, res) => {
     const { name, email, phone, inquiry, captchaSolution } = req.body;
 
     if (!captchaSolution) {
-        console.log('Captcha solution is missing.');
         return res.status(400).json({ message: 'Captcha solution is required' });
     }
 
     try {
         // Verify captcha solution
         const captchaVerification = await verifyCaptcha(captchaSolution);
-        console.log('Captcha verification response:', captchaVerification);
 
         if (!captchaVerification.success) {
-            console.error('Captcha verification failed:', captchaVerification.errors);
             return res.status(400).json({ message: 'Captcha verification failed', details: captchaVerification.errors });
         }
 
@@ -134,7 +127,6 @@ const sendEmailHandler = async (req, res) => {
 
         // Send the inquiry email
         await transporter.sendMail(inquiryMailOptions);
-        console.log('Inquiry email sent successfully');
 
         // Email options for the confirmation message
         const confirmationMailOptions = {
@@ -156,12 +148,10 @@ const sendEmailHandler = async (req, res) => {
 
         // Send the confirmation email
         await transporter.sendMail(confirmationMailOptions);
-        console.log('Confirmation email sent successfully');
 
         // Send success response
         res.status(200).json({ message: 'Inquiry sent and confirmation email sent successfully' });
     } catch (error) {
-        console.error('Error in send-email:', error);
         return res.status(500).json({ message: 'Failed to send email', error: process.env.NODE_ENV === 'development' ? error.message : undefined });
     }
 };

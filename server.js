@@ -25,7 +25,6 @@ app.use(express.static(path.join(__dirname, 'admin')));
 // Database connection (NEON_URL only)
 const neonUrl = process.env.NEON_URL;
 if (!neonUrl) {
-  console.error('NEON_URL is required to start the server.');
   process.exit(1);
 }
 const pool = new Pool({ connectionString: neonUrl });
@@ -61,24 +60,20 @@ const validatePassword = (password) => {
 // Example of a connection check
 pool.connect((err) => {
   if (err) {
-    console.error('Error connecting to the database:', err);
     return;
   }
-  console.log('Connected to the database. This is Client Side');
 });
 
 // Close the pool on app termination
 process.on('SIGINT', () => {
   pool.end(() => {
-    console.log('PostgreSQL connection pool closed.');
     process.exit(0);
   });
 });
 
 // Start the server
 app.listen(PORT, () => {
-  console.log(`Server is running on http://localhost:${PORT}`);
-  
+
 });
 
 // Middleware to send notif
@@ -90,7 +85,6 @@ const notifyAdmin = async (user_id, booking_id, title, message) => {
           [user_id, booking_id, title, message]
       );
   } catch (error) {
-      console.error('Error Sending Notif', error);
   } finally {
       client.release();
   }
@@ -104,7 +98,6 @@ const notifyClient = async (user_id, booking_id, title, message) => {
           [user_id, booking_id, title, message]
       );
   } catch (error) {
-      console.error('Error Sending Notif', error);
   } finally {
       client.release();
   }
@@ -133,7 +126,6 @@ app.post("/api/bookings", (req, res) => {
   const missingFields = requiredFields.filter(field => !req.body[field]);
 
   if (missingFields.length > 0) {
-    console.log('Missing fields:', missingFields); // Log missing fields
     return res.status(400).json({ 
       message: "Missing required fields", 
       missingFields: missingFields 
@@ -157,12 +149,10 @@ app.post("/api/bookings", (req, res) => {
 
   pool.query(sql, values, (err, result) => {
     if (err) {
-      console.error('Database Error:', err); // Log the database error
       return res.status(500).json({ message: "Error creating booking", error: err.message });
     }
 
     const booking_id = result.rows[0].booking_id;
-    console.log(booking_id);
     const formattedUserId = String(user_id).padStart(11, '0'); 
     const formattedBookingId = String(booking_id).padStart(11, '0'); 
     const titleClient = "Booking Created.";
@@ -188,8 +178,6 @@ app.post("/api/bookings", (req, res) => {
     notifyAdmin(user_id, booking_id, titleAdmin, messageAdmin);
     sendEmailNotif(titleEmail, messageEmail, clientEmail);
 
-    // Log successful query details
-    console.log('Booking created successfully:', result.rows[0].booking_id);
     res.status(201).json({ message: "Booking created successfully", bookingId: result.rows[0].booking_id });
   });
 });
@@ -210,7 +198,6 @@ app.patch("/api/messages/:id/read", (req, res) => {
 
   pool.query(sql, params, (err, results) => {
       if (err) {
-          console.error('Error updating notification:', err);
           return res.status(500).json({ message: "Error marking notification as read", error: err.message });
       }
 
@@ -233,7 +220,6 @@ app.put('/api/messages/read', async (req, res) => {
       await pool.query('UPDATE messages SET read = $1 WHERE read = $2', [read, false]);
       res.json({ message: 'All notifications marked as read' });
   } catch (error) {
-      console.error('Error marking notifications as read:', error);
       res.status(500).json({ message: 'Error marking notifications as read' });
   }
 });
@@ -281,7 +267,6 @@ app.put('/api/profile/change-password/:id', async (req, res) => {
 
     res.status(200).json({ message: "Password updated successfully." });
   } catch (error) {
-    console.error('Error updating password:', error);
     res.status(500).json({ message: "Error updating password", error: error.message });
   } finally {
     client.release();
@@ -304,14 +289,11 @@ app.post('/api/messageconfirm', async (req, res) => {
       );
       return res.status(201).json({ message: "Message sent successfully", data: result.rows[0] });
   } catch (error) {
-      console.error("Error inserting message:", error);
       return res.status(500).json({ message: "Internal server error" });
   }
 });
 
 app.post('/api/admin/notification', async (req, res) => {
-  console.log("Received request:", req.body); // Log incoming request
-
   const { user_id, title, message } = req.body;
 
   // Validate required fields
@@ -327,7 +309,6 @@ app.post('/api/admin/notification', async (req, res) => {
       );
       return res.status(201).json({ message: "Admin notification sent successfully", data: result.rows[0] });
   } catch (error) {
-      console.error("Error inserting admin notification:", error);
       return res.status(500).json({ message: "Internal server error" });
   }
 });
@@ -345,7 +326,6 @@ app.get('/api/cars/fetching', async (req, res) => {
 
     res.json(carsWithImages);
   } catch (error) {
-    console.error('Error fetching cars:', error);
     res.status(500).json({ error: 'Internal server error', details: error.message });
   }
 });
@@ -364,11 +344,8 @@ app.get('/api/cars/ratings', async (req, res) => {
       ratings[row.car_id] = row.average_rating;
     });
 
-    console.log('Retrieved car ratings:', ratings);
-
     res.json(ratings);
   } catch (error) {
-    console.error('Error retrieving car ratings:', error);
     res.status(500).json({ message: 'Error retrieving car ratings' });
   }
 });
@@ -395,7 +372,6 @@ app.get('/api/cars/:id', async (req, res) => {
 
     res.json(vehicle);
   } catch (error) {
-    console.error('Error fetching vehicle details:', error);
     res.status(500).json({ error: 'Internal server error', details: error.message });
   }
 });   
@@ -411,7 +387,6 @@ app.get('/api/carslider/data-retrieve', async (req, res) => {
 
     res.json(cars);
   } catch (error) {
-    console.error('Error retrieving cars:', error);
     res.status(500).json({ message: 'Error retrieving cars' });
   }
 });
@@ -434,7 +409,6 @@ app.get("/api/occupied-dates/:carId", (req, res) => {
 
   pool.query(sql, [carId], (err, results) => {
     if (err) {
-      console.error(err);
       return res.status(500).json({ message: "Error fetching bookings", error: err.message });
     }
 
@@ -448,31 +422,24 @@ app.get("/api/occupied-dates/:carId", (req, res) => {
 });
 
 app.post('/api/feedback/submit', async (req, res) => {
-  console.log("Incoming request body:", req.body); // Log incoming request data
-
   const { user_id, car_id, booking_id, rating, description } = req.body;
   const formattedBookingId = String(booking_id).padStart(11, '0');
   const formattedUserId = String(user_id).padStart(11, '0');
 
   // Validate incoming data
   if (!user_id) {
-      console.error("Validation failed: User ID is required.");
       return res.status(400).json({ message: "User ID is required." });
   }
   if (!car_id) {
-      console.error("Validation failed: Car ID is required.");
       return res.status(400).json({ message: "Car ID is required." });
   }
   if (rating === undefined || rating === null) {
-      console.error("Validation failed: Rating is required.");
       return res.status(400).json({ message: "Rating is required." });
   }
   if (rating < 1 || rating > 5) {
-      console.error("Validation failed: Rating must be between 1 and 5.");
       return res.status(400).json({ message: "Rating must be between 1 and 5." });
   }
   if (!description || description.trim() === '') {
-      console.error("Validation failed: Description is required.");
       return res.status(400).json({ message: "Description is required." });
   }
 
@@ -495,11 +462,8 @@ app.post('/api/feedback/submit', async (req, res) => {
 
       notifyAdmin(user_id, booking_id, titleAdmin, messageAdmin);
       notifyClient(user_id, booking_id, titleClient, messageClient);
-
-      console.log("Feedback submitted successfully, ID:", feedbackId);
       res.status(201).json({ message: "Feedback submitted successfully.", feedbackId });
   } catch (error) {
-      console.error("Error inserting feedback:", error);
       if (error.code === '23505') { // Unique violation
           return res.status(409).json({ message: "Feedback already submitted for this user and car." });
       }
@@ -513,7 +477,6 @@ app.get("/api/messages/user/:user_id", (req, res) => {
 
   pool.query(sql, [user_id], (err, results) => {
     if (err) {
-      console.error("Database query error:", err); // Log the error for debugging
       return res.status(500).json({ message: "Error fetching messages", error: err.message });
     }
 
@@ -542,7 +505,6 @@ app.get("/api/bookings/user/:id", (req, res) => {
 
   pool.query(sql, [user_id], (err, results) => {
     if (err) {
-      console.error(err);
       return res.status(500).json({ message: "Error fetching bookings", error: err.message });
     }
 
@@ -555,17 +517,12 @@ app.put('/api/bookings/cancel/:booking_id', async (req, res) => {
   const { cancel_reason, user_id, clientEmail } = req.body; // Extract the cancel reason from the request body
   const formattedBookingId = String(booking_id).padStart(11, '0');
   const formattedUserId = String(user_id).padStart(11, '0');
-  // Log incoming request for debugging
-  console.log(`Received cancel request for booking ID: ${booking_id}`);
-  console.log(`Cancel reason: ${cancel_reason}`);
 
   // Validate the booking_id and cancel_reason
   if (!booking_id) {
-    console.error('Booking ID is required.');
     return res.status(400).json({ message: 'Booking ID is required.' });
   }
   if (!cancel_reason) {
-    console.error('Cancellation reason is required.');
     return res.status(400).json({ message: 'Cancellation reason is required.' });
   }
 
@@ -578,7 +535,6 @@ app.put('/api/bookings/cancel/:booking_id', async (req, res) => {
 
     // Check if the booking was found
     if (bookingResult.rowCount === 0) {
-      console.warn(`No booking found for ID: ${booking_id}`);
       return res.status(404).json({ message: 'Booking not found.' });
     }
 
@@ -628,7 +584,6 @@ app.put('/api/bookings/cancel/:booking_id', async (req, res) => {
     // Respond with success
     res.status(200).json({ message: 'Booking cancelled successfully.', booking: result.rows[0] });
   } catch (error) {
-    console.error('Error cancelling booking:', error);
     res.status(500).json({ message: 'An error occurred while cancelling the booking.' });
   }
 });
@@ -645,7 +600,6 @@ app.get("/api/bookings/:bookingId", (req, res) => {
 
   pool.query(sql, [bookingId], (err, results) => {
     if (err) {
-      console.error('Error fetching booking details:', err);
       return res.status(500).json({ 
         message: "Error fetching booking details", 
         error: err.message 
@@ -671,7 +625,6 @@ app.get("/api/user/:id", (req, res) => {
 
   pool.query(sql, [user_id], (err, results) => {
     if (err) {
-      console.error(err);
       return res.status(500).json({ message: "Error fetching user data", error: err.message });
     }
 
@@ -707,12 +660,10 @@ app.put('/api/bookings/:bookingId/confirm-price', async (req, res) => {
   try {
       const id = parseInt(booking_id, 10);
       const query = 'UPDATE bookings SET priceaccepted = true WHERE booking_id = $1';
-      console.log('Executing query:', query, 'with parameters:', [id]);
-      
+
       const result = await pool.query(query, [id]);
 
       if (result.rowCount === 0) {
-          console.error('No booking found with ID:', id);
           return res.status(404).json({ error: 'Booking not found' });
       }
       
@@ -722,7 +673,6 @@ app.put('/api/bookings/:bookingId/confirm-price', async (req, res) => {
 
       res.status(200).json({ message: 'Price accepted successfully' });
   } catch (error) {
-      console.error('Error updating price acceptance:', error);
       res.status(500).json({ error: 'Failed to update price acceptance' });
   }
 });
@@ -739,7 +689,6 @@ app.get('/api/booking/data-retrieve/:booking_id', async (req, res) => {
     
     res.json(result.rows[0]);
   } catch (error) {
-    console.error('Error fetching booking:', error);
     res.status(500).json({ message: 'Error retrieving booking', error: error.message });
   }
 });
@@ -775,7 +724,6 @@ app.get('/api/bookings/:booking_id', async (req, res) => {
       price: booking.price,
     });
   } catch (error) {
-    console.error('Error fetching booking:', error);
     res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -825,7 +773,6 @@ app.put('/api/upload-receipt/:bookingId', upload.single('receipt'), async (req, 
 
     return res.status(200).json({ message: 'Receipt uploaded successfully' });
   } catch (error) {
-    console.error('Error uploading receipt:', error);
     return res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -841,7 +788,6 @@ app.put('/api/profile/update/:id', upload.single('userspfp'), async (req, res) =
           // Convert the uploaded file buffer to base64
           userspfp = req.file.buffer.toString('base64');
       } catch (error) {
-          console.error('Error converting file to base64:', error);
           return res.status(500).json({ message: 'Error processing image', error: error.message });
       }
   }
@@ -867,16 +813,12 @@ app.put('/api/profile/update/:id', upload.single('userspfp'), async (req, res) =
   ];
 
   try {
-      console.log('SQL Query:', sql);
-      console.log('Values:', values);
-
       const result = await pool.query(sql, values);
       if (result.rows.length === 0) {
           return res.status(404).json({ message: 'User not found' });
       }
       res.status(200).json(result.rows[0]);
   } catch (error) {
-      console.error('Error updating user profile:', error);
       return res.status(500).json({ message: 'Internal server error', error: error.message });
   }
 });
@@ -911,7 +853,6 @@ app.post("/api/signin", async (req, res) => {
     res.status(200).json({ message: "Signin successful", user });
     
   } catch (err) {
-    console.error(err);
     return res.status(500).json({ message: "Error during signin", error: err.message });
   }
 });
@@ -950,7 +891,6 @@ app.post('/api/send-otp', async (req, res) => {
           maxConnections: 10, // Adjust based on your needs and server capabilities
           maxMessages: 100,   // Close and recreate connection after 100 messages
       });
-      console.log('Sending email to:', email);
 
       // Email options
       const mailOptions = {
@@ -962,11 +902,9 @@ app.post('/api/send-otp', async (req, res) => {
 
       // Send the email
       await transporter.sendMail(mailOptions);
-      console.log('OTP sent successfully');
 
       return res.status(200).json({ message: 'OTP sent successfully' });
   } catch (error) {
-      console.error('Database query error:', error);
       return res.status(500).json({ message: 'Internal server error' });
   }
 });
@@ -996,7 +934,6 @@ app.get("/api/cars", (req, res) => {
   const sql = "SELECT * FROM cars";
   pool.query(sql, (err, results) => {
     if (err) {
-      console.error(err);
       return res.status(500).json({ message: "Error fetching cars", error: err.message });
     }
     res.json(results.rows);
@@ -1004,8 +941,6 @@ app.get("/api/cars", (req, res) => {
 });
 
 app.post("/api/signup", async (req, res) => {
-  console.log('Incoming request body:', req.body); // Log the incoming request body
-
   try {
     const { name, email, password, mobileNumber } = req.body;
 
@@ -1066,7 +1001,6 @@ app.post("/api/signup", async (req, res) => {
     return res.status(201).json({ message: "User registered successfully", user_id: result.rows[0].id });
 
   } catch (error) {
-    console.error('Unexpected error:', error);
     return res.status(500).json({ message: "An unexpected error occurred", error: error.message });
   }
 });
@@ -1089,7 +1023,6 @@ app.get('/api/profilepicture/:id', async (req, res) => {
     res.set('Content-Type', 'image/jpeg');
     res.send(userProfilePicture);
   } catch (error) {
-    console.error('Error fetching profile picture:', error);
     res.status(500).json({ message: "Error fetching profile picture", error: error.message });
   }
 });
@@ -1111,7 +1044,6 @@ app.get('/api/feedback/check/:bookingId', async (req, res) => {
       // Send the feedback status as response
       return res.status(200).json({ hasFeedback: result.rows[0].hasfeedback });
   } catch (error) {
-      console.error("Error checking feedback status:", error);
       return res.status(500).json({ message: "Internal server error" });
   }
 });
@@ -1196,14 +1128,12 @@ app.put('/api/booking/update/:bookingId', async (req, res) => {
       }
 
       const updatedBooking = result.rows[0];
-      console.log(user_id);
       notifyClient(user_id, booking_id, titleClient, messageClient);
       notifyAdmin(user_id, booking_id, titleAdmin, messageAdmin);
       sendEmailNotif(titleEmail, messageEmail, clientEmail);
 
       res.json(updatedBooking);
   } catch (error) {
-      console.error('Error updating booking:', error);
       res.status(500).json({ error: 'Internal server error' });
   }
 });
@@ -1246,7 +1176,6 @@ app.post('/api/client/forgot-password', async (req, res) => {
     
     res.json({ message: 'Password reset instructions sent to your email' });
   } catch (error) {
-    console.error('Error in forgot password:', error);
     res.status(500).json({ error: 'Failed to process password reset request' });
   }
 });
@@ -1276,7 +1205,6 @@ app.post('/api/reset-password', async (req, res) => {
     
     res.json({ message: 'Password successfully reset' });
   } catch (error) {
-    console.error('Error resetting password:', error);
     res.status(500).json({ error: 'Failed to reset password' });
   }
 });

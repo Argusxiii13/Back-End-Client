@@ -196,7 +196,8 @@ router.post('/api/client/forgot-password', async (req, res) => {
       [resetToken, tokenExpiry, email]
     );
     
-    const resetLink = `https://autoconnect-transport.vercel.app/reset-password?token=${resetToken}`;
+    const frontendBaseUrl = (process.env.CLIENT_APP_URL || process.env.FRONTEND_URL || 'https://autoconnect-client-view.vercel.app').replace(/\/+$/, '');
+    const resetLink = `${frontendBaseUrl}/reset-password?token=${encodeURIComponent(resetToken)}`;
     const title = "Password Reset Request";
     const message = `
       <p>You have requested to reset your password.</p>
@@ -216,12 +217,17 @@ router.post('/api/client/forgot-password', async (req, res) => {
 
 
 router.post('/api/reset-password', async (req, res) => {
-  const { token, newPassword } = req.body;
+  const { token, resetToken, newPassword } = req.body;
+  const providedToken = token || resetToken;
+
+  if (!providedToken || !newPassword) {
+    return res.status(400).json({ error: 'Reset token and new password are required' });
+  }
   
   try {
     const result = await pool.query(
       'SELECT id FROM users WHERE reset_token = $1 AND reset_token_expiry > NOW()',
-      [token]
+      [providedToken]
     );
     
     if (result.rows.length === 0) {
@@ -232,7 +238,7 @@ router.post('/api/reset-password', async (req, res) => {
     
     await pool.query(
       'UPDATE users SET password = $1, reset_token = NULL, reset_token_expiry = NULL WHERE reset_token = $2',
-      [hashedPassword, token]
+      [hashedPassword, providedToken]
     );
     
     res.json({ message: 'Password successfully reset' });

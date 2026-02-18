@@ -129,8 +129,7 @@ const upload = multer({
 });
 
 const validatePassword = (password) => {
-  const regex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[a-zA-Z\d]{8,}$/;
-  return regex.test(password);
+  return typeof password === 'string' && password.length >= 5;
 };
 
 pool.on('error', (error) => {

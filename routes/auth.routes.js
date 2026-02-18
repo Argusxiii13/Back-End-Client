@@ -116,7 +116,7 @@ router.post("/api/signup", async (req, res) => {
 
     if (!validatePassword(password)) {
       return res.status(400).json({
-        message: "Password must contain at least one uppercase letter, one lowercase letter, one number, and be at least 8 characters long."
+        message: "Password must be at least 5 characters long."
       });
     }
 

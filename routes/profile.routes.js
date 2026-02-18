@@ -13,7 +13,7 @@ router.put('/api/profile/change-password/:id', async (req, res) => {
   }
 
   if (!validatePassword(newPassword)) {
-    return res.status(400).json({ message: "New password must contain at least one uppercase letter, one lowercase letter, one number, and be at least 8 characters long." });
+    return res.status(400).json({ message: "New password must be at least 5 characters long." });
   }
 
   const client = await pool.connect();

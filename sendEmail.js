@@ -88,14 +88,12 @@ const sendEmailHandler = async (req, res) => {
     }
 
     try {
-        // Verify captcha solution
         const captchaVerification = await verifyCaptcha(captchaSolution);
 
         if (!captchaVerification.success) {
             return res.status(400).json({ message: 'Captcha verification failed', details: captchaVerification.errors });
         }
 
-        // Set up Nodemailer
         const transporter = nodemailer.createTransport({
             host: SMTP_HOST,
             port: SMTP_PORT,
@@ -106,7 +104,6 @@ const sendEmailHandler = async (req, res) => {
             },
         });
 
-        // Email options for the inquiry
         const inquiryMailOptions = {
             from: SMTP_USER,
             to: SMTP_USER, // Send to the same address as SMTP_USER
@@ -125,10 +122,8 @@ const sendEmailHandler = async (req, res) => {
             }),
         };
 
-        // Send the inquiry email
         await transporter.sendMail(inquiryMailOptions);
 
-        // Email options for the confirmation message
         const confirmationMailOptions = {
             from: SMTP_USER,
             to: email, // The user's email address
@@ -146,10 +141,8 @@ const sendEmailHandler = async (req, res) => {
             }),
         };
 
-        // Send the confirmation email
         await transporter.sendMail(confirmationMailOptions);
 
-        // Send success response
         res.status(200).json({ message: 'Inquiry sent and confirmation email sent successfully' });
     } catch (error) {
         return res.status(500).json({ message: 'Failed to send email', error: process.env.NODE_ENV === 'development' ? error.message : undefined });

@@ -3,13 +3,11 @@ const dotenv = require('dotenv');
 
 dotenv.config();
 
-// SMTP configuration
 const SMTP_HOST = process.env.SMTP_HOST;
 const SMTP_PORT = process.env.SMTP_PORT;
 const SMTP_SECURE = process.env.SMTP_SECURE === 'true';
 const SMTP_USER = process.env.SMTP_USER;
 const SMTP_PASS = process.env.SMTP_PASS;
-
 
 
 function generateEmailHTML(options) {
@@ -93,10 +91,8 @@ function generateEmailHTML(options) {
     `;
   }
 
-// Middleware to send email notifications
 const sendEmailNotif = async (title, message, clientEmail) => {
     try {
-        // Set up Nodemailer transporter
         const transporter = nodemailer.createTransport({
             host: SMTP_HOST,
             port: SMTP_PORT,
@@ -107,7 +103,6 @@ const sendEmailNotif = async (title, message, clientEmail) => {
             },
         });
 
-        // Email options for the client notification
         const mailOptions = {
             from: SMTP_USER,
             to: clientEmail, // The client's email address
@@ -120,7 +115,6 @@ const sendEmailNotif = async (title, message, clientEmail) => {
             }),
         };
 
-        // Send the email notification
         await transporter.sendMail(mailOptions);
     } catch (error) {
     }

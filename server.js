@@ -21,11 +21,11 @@ const bcrypt = require('bcrypt');
 const otps = {};
 app.use(express.static(path.join(__dirname, 'admin')));
 
-const neonUrl = process.env.NEON_URL;
-if (!neonUrl) {
+const databaseUrl = process.env.DATABASE_URL;
+if (!databaseUrl) {
   process.exit(1);
 }
-const pool = new Pool({ connectionString: neonUrl });
+const pool = new Pool({ connectionString: databaseUrl });
 
 const RETRYABLE_PG_CODES = new Set([
   '57P01',

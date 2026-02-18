@@ -1,4 +1,6 @@
 const express = require('express');
+const path = require('path');
+const fs = require('fs');
 
 module.exports = (deps) => {
   const router = express.Router();
@@ -134,14 +136,24 @@ router.post("/api/signup", async (req, res) => {
       return res.status(409).json({ message: "Mobile number already exists" });
     }
 
-    const defaultImagePath = path.join(__dirname, 'pfp', 'users', 'DefaultProfile.jpg');
-    const imageBuffer = await fs.promises.readFile(defaultImagePath);
-    const userspfp = Buffer.from(imageBuffer);
+    const defaultImagePath = path.join(__dirname, '..', 'pfp', 'users', 'DefaultProfile.jpg');
+    let userspfp = null;
+
+    try {
+      const imageBuffer = await fs.promises.readFile(defaultImagePath);
+      userspfp = Buffer.from(imageBuffer);
+    } catch (imageError) {
+      userspfp = null;
+    }
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    const insertSQL = "INSERT INTO users (name, email, password, phonenumber, gender, userspfp) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id";
-    const values = [name, email, hashedPassword, mobileNumber, "Not Set", userspfp];
+    const insertSQL = userspfp
+      ? "INSERT INTO users (name, email, password, phonenumber, gender, userspfp) VALUES ($1, $2, $3, $4, $5, $6) RETURNING id"
+      : "INSERT INTO users (name, email, password, phonenumber, gender) VALUES ($1, $2, $3, $4, $5) RETURNING id";
+    const values = userspfp
+      ? [name, email, hashedPassword, mobileNumber, "Not Set", userspfp]
+      : [name, email, hashedPassword, mobileNumber, "Not Set"];
     const clientEmail = email;
     const titleEmail = "Welcome to AutoConnect!";
     const messageEmail = `Hello ${name},

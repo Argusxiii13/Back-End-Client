@@ -57,7 +57,11 @@ const configuredOrigins = (allowedOrigin || '')
   .map((origin) => origin.trim())
   .filter(Boolean);
 
-const defaultOrigins = ['https://autoconnect-client-view.vercel.app'];
+const defaultOrigins = [
+  'https://autoconnect-client-view.vercel.app',
+  'http://localhost:3000',
+  'http://127.0.0.1:3000'
+];
 const mergedOrigins = Array.from(new Set([...configuredOrigins, ...defaultOrigins]));
 
 const corsOptions = {

@@ -6,10 +6,10 @@ const path = require('path');
 const fs = require('fs');
 const sendEmailHandler = require("./sendEmail.js");
 const sendEmailNotif = require("./sendEmailNotif");
-const allowedOrigin = process.env.ALLOWED_ORIGIN;
 const axios = require('axios');
 const dotenv = require('dotenv');
 dotenv.config();
+const allowedOrigin = process.env.ALLOWED_ORIGIN;
 const nodemailer = require("nodemailer");
 const bodyParser = require('body-parser');
 const http = require('http');
@@ -52,6 +52,27 @@ const isRetryablePgError = (error) => {
 
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
+const configuredOrigins = (allowedOrigin || '')
+  .split(',')
+  .map((origin) => origin.trim())
+  .filter(Boolean);
+
+const defaultOrigins = ['https://autoconnect-client-view.vercel.app'];
+const mergedOrigins = Array.from(new Set([...configuredOrigins, ...defaultOrigins]));
+
+const corsOptions = {
+  origin: (origin, callback) => {
+    if (!origin) return callback(null, true);
+    if (mergedOrigins.includes('*') || mergedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+    return callback(new Error('Not allowed by CORS'));
+  },
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  optionsSuccessStatus: 200
+};
+
 const retryPgOperation = async (operation, options = {}) => {
   const retries = options.retries ?? 2;
   const delayMs = options.delayMs ?? 250;
@@ -72,7 +93,7 @@ const retryPgOperation = async (operation, options = {}) => {
 };
 
 const httpServer = http.createServer(app);
-const socketCorsOrigin = allowedOrigin && allowedOrigin !== '*' ? allowedOrigin : '*';
+const socketCorsOrigin = mergedOrigins.includes('*') ? '*' : mergedOrigins;
 const io = new Server(httpServer, {
   cors: {
     origin: socketCorsOrigin,
@@ -90,10 +111,8 @@ io.on('connection', (socket) => {
 
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true }));
-app.use(cors());
-app.use(cors({
-  origin: allowedOrigin === '*' ? '*' : allowedOrigin
-}));
+app.use(cors(corsOptions));
+app.options('*', cors(corsOptions));
 app.use(bodyParser.json()); // Ensure this is included
 
 const fileFilter = (req, file, cb) => {
